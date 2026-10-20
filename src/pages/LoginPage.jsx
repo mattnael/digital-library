@@ -1,38 +1,45 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout';
-import { User, Shield, AlertCircle, Mail, Eye, EyeOff, ArrowRight, Lock } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { apiErrorMessage } from '../utils/format';
+import { User, Shield, AlertCircle, Info, Mail, Eye, EyeOff, ArrowRight, Lock } from 'lucide-react';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
   const [role, setRole] = useState('pengguna');
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [infoMessage] = useState(() =>
+    location.state?.registered ? 'Pendaftaran berhasil. Silakan masuk dengan akun baru Anda.' : '',
+  );
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
       setErrorMessage('Email atau kata sandi belum sesuai.');
       return;
     }
 
-    // Mengambil nama dari bagian depan email
-    const extractedName = email.split('@')[0].replace('.', ' ');
-    const formattedFullName = extractedName.charAt(0).toUpperCase() + extractedName.slice(1);
-    const firstName = formattedFullName.split(' ')[0];
-
-    // Menyimpan Session User
-    localStorage.setItem('userFullName', formattedFullName || 'Nadia Putri');
-    localStorage.setItem('userName', firstName || 'Nadia');
-    localStorage.setItem('userRole', role === 'admin' ? 'Pengelola Perpustakaan' : 'Mahasiswa');
-
-    // Navigasi
-    if (role === 'admin') {
-      navigate('/admin/dashboard');
-    } else {
-      navigate('/dashboard');
+    setSubmitting(true);
+    setErrorMessage('');
+    try {
+      // Peran ditentukan oleh akun di server; tab hanya memilih tujuan.
+      const user = await login(email, password, role === 'admin');
+      if (role === 'admin' && user.role !== 'ADMIN') {
+        setErrorMessage('Akun ini tidak memiliki akses admin.');
+        return;
+      }
+      navigate(user.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard');
+    } catch (error) {
+      setErrorMessage(apiErrorMessage(error, 'Gagal masuk. Coba lagi beberapa saat.'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -91,6 +98,13 @@ export default function LoginPage() {
         </div>
       )}
 
+      {infoMessage && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-6 text-sm flex gap-3 text-emerald-800">
+          <Info className="w-5 h-5 shrink-0 text-emerald-700 mt-0.5" />
+          <p className="font-semibold">{infoMessage}</p>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label className="block text-sm font-semibold text-stone-700 mb-2">Email</label>
@@ -132,9 +146,10 @@ export default function LoginPage() {
 
         <button
           type="submit"
-          className="w-full bg-[#133227] hover:bg-[#0a2018] text-white py-4 rounded-2xl text-base font-semibold flex items-center justify-center gap-2 transition shadow-sm cursor-pointer mt-2"
+          disabled={submitting}
+          className="w-full bg-[#133227] hover:bg-[#0a2018] text-white py-4 rounded-2xl text-base font-semibold flex items-center justify-center gap-2 transition shadow-sm cursor-pointer mt-2 disabled:opacity-60 disabled:cursor-wait"
         >
-          <ArrowRight className="w-5 h-5" /> Masuk sebagai {role}
+          <ArrowRight className="w-5 h-5" /> {submitting ? 'Memproses...' : `Masuk sebagai ${role}`}
         </button>
       </form>
 

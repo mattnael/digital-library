@@ -1,29 +1,13 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, ArrowUpRight } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function UserLayout({ children }) {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
-  const [userName] = useState(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const parsed = JSON.parse(storedUser);
-        if (parsed.name) return parsed.name;
-        if (parsed.email) {
-          const nameFromEmail = parsed.email.split('@')[0];
-          return nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1);
-        }
-      } catch {
-        return 'User';
-      }
-    }
-    return 'User';
-  });
-
-  const handleSignOut = () => {
-    localStorage.clear();
+  const handleSignOut = async () => {
+    await logout();
     navigate('/login');
   };
 
@@ -31,8 +15,8 @@ export default function UserLayout({ children }) {
     <div className="min-h-screen bg-[#f7f5ef] text-stone-800 font-sans flex flex-col">
       {/* Top Header Navigation */}
       <header className="bg-white border-b border-stone-200/80 h-16 px-8 flex items-center justify-between sticky top-0 z-30">
-        <div 
-          className="flex items-center gap-3 cursor-pointer" 
+        <div
+          className="flex items-center gap-3 cursor-pointer"
           onClick={() => navigate('/dashboard')}
         >
           <div className="p-1.5 bg-[#133227] text-white rounded-md">
@@ -43,8 +27,8 @@ export default function UserLayout({ children }) {
 
         {/* User profile & SignOut */}
         <div className="flex items-center gap-6 text-xs font-sans">
-          <span className="font-bold text-[#133227] text-sm">{userName}</span>
-          <button 
+          <span className="font-bold text-[#133227] text-sm">{user?.fullName || 'User'}</span>
+          <button
             onClick={handleSignOut}
             className="text-stone-500 hover:text-[#133227] flex items-center gap-0.5 transition cursor-pointer font-medium"
           >

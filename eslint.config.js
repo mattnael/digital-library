@@ -5,7 +5,8 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // server/ punya runtime Node dengan konfigurasi lint tersendiri di masa depan.
+  globalIgnores(['dist', 'server']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

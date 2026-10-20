@@ -1,0 +1,95 @@
+name: digital-library
+
+# Semua kredensial dan konfigurasi rahasia hidup di .env (gitignored) dan
+# disuntik utuh lewat env_file, file docker-compose tidak mengeja satu pun nilai rahasia.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks:
+      - internal
+
+  api:
+    build: ./server
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Hanya nilai runtime container, bukan kredensial.
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_started
+    networks:
+      - internal
+
+  # Opsional: docker compose --profile monitoring up -d
+  prometheus:
+    image: prom/prometheus:v3.7.3
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    ports:
+      # Bind localhost saja: metrik bukan untuk konsumen publik.
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - internal
+
+  grafana:
+    image: grafana/grafana:12.3.1
+    restart: unless-stopped
+    profiles:
+      - monitoring
+    env_file:
+      - .env
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - internal
+
+volumes:
+  pgdata:
+  uploads:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  internal:

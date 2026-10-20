@@ -1,10 +1,17 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout';
-import { Eye, EyeOff, Check, ArrowRight } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { apiErrorMessage } from '../utils/format';
+import { Eye, EyeOff, Check, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function RegisterPage() {
+  const navigate = useNavigate();
+  const { register } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -21,12 +28,42 @@ export default function RegisterPage() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Register:', formData);
+    if (formData.password !== formData.confirmPassword) {
+      setErrorMessage('Konfirmasi kata sandi tidak sama.');
+      return;
+    }
+    if (!formData.agreeTerms) {
+      setErrorMessage('Centang persetujuan ketentuan penggunaan terlebih dahulu.');
+      return;
+    }
+
+    setSubmitting(true);
+    setErrorMessage('');
+    setFieldErrors({});
+    try {
+      await register(formData.fullName, formData.email, formData.password);
+      navigate('/login', { state: { registered: true } });
+    } catch (error) {
+      const details = error?.response?.data?.details;
+      if (Array.isArray(details) && details.length > 0) {
+        setFieldErrors(Object.fromEntries(details.map((item) => [item.field, item.message])));
+        setErrorMessage('Periksa kembali data yang diisi.');
+      } else {
+        setErrorMessage(apiErrorMessage(error, 'Pendaftaran gagal. Coba lagi beberapa saat.'));
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const isPasswordValid = formData.password.length >= 8 && /\d/.test(formData.password);
+
+  const fieldClass = (field) =>
+    `w-full bg-white border rounded-2xl py-4 px-4 text-base text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 transition ${
+      fieldErrors[field] ? 'border-red-400 focus:ring-red-400' : 'border-stone-300 focus:ring-[#16382c]'
+    }`;
 
   return (
     <AuthLayout>
@@ -48,6 +85,13 @@ export default function RegisterPage() {
         </p>
       </div>
 
+      {errorMessage && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6 text-sm flex gap-3 text-red-700">
+          <AlertCircle className="w-5 h-5 shrink-0 text-red-600 mt-0.5" />
+          <p className="font-semibold">{errorMessage}</p>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className="block text-sm font-semibold text-stone-700 mb-2">Nama lengkap *</label>
@@ -56,10 +100,13 @@ export default function RegisterPage() {
             name="fullName"
             value={formData.fullName}
             onChange={handleChange}
-            className="w-full bg-white border border-stone-300 rounded-2xl py-4 px-4 text-base text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#16382c]"
+            className={fieldClass('fullName')}
             placeholder="Masukkan nama lengkap"
             required
           />
+          {fieldErrors.fullName && (
+            <p className="text-xs text-red-600 mt-1.5">{fieldErrors.fullName}</p>
+          )}
         </div>
 
         <div>
@@ -70,7 +117,7 @@ export default function RegisterPage() {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full bg-white border border-stone-300 rounded-2xl py-4 px-4 pr-12 text-base text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#16382c]"
+              className={fieldClass('email')}
               placeholder="nama@kampus.ac.id"
               required
             />
@@ -78,7 +125,11 @@ export default function RegisterPage() {
               <Check className="w-5 h-5 text-emerald-700 absolute right-4 top-4.5" />
             )}
           </div>
-          <p className="text-xs text-stone-400 mt-1.5">Gunakan alamat email kampus yang aktif.</p>
+          {fieldErrors.email ? (
+            <p className="text-xs text-red-600 mt-1.5">{fieldErrors.email}</p>
+          ) : (
+            <p className="text-xs text-stone-400 mt-1.5">Gunakan alamat email kampus yang aktif.</p>
+          )}
         </div>
 
         <div>
@@ -89,7 +140,7 @@ export default function RegisterPage() {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full bg-white border border-stone-300 rounded-2xl py-4 px-4 pr-12 text-base text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#16382c]"
+              className={fieldClass('password')}
               placeholder="Masukkan kata sandi"
               required
             />
@@ -109,6 +160,9 @@ export default function RegisterPage() {
               <Check className="w-4 h-4" /> Huruf & angka
             </span>
           </div>
+          {fieldErrors.password && (
+            <p className="text-xs text-red-600 mt-1.5">{fieldErrors.password}</p>
+          )}
         </div>
 
         <div>
@@ -119,7 +173,7 @@ export default function RegisterPage() {
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
-              className="w-full bg-white border border-stone-300 rounded-2xl py-4 px-4 pr-12 text-base text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#16382c]"
+              className={fieldClass('confirmPassword')}
               placeholder="Ulangi kata sandi"
               required
             />
@@ -146,9 +200,10 @@ export default function RegisterPage() {
 
         <button
           type="submit"
-          className="w-full bg-[#133227] hover:bg-[#0a2018] text-white py-4 rounded-2xl text-base font-semibold flex items-center justify-center gap-2 transition shadow-sm mt-4 cursor-pointer"
+          disabled={submitting}
+          className="w-full bg-[#133227] hover:bg-[#0a2018] text-white py-4 rounded-2xl text-base font-semibold flex items-center justify-center gap-2 transition shadow-sm mt-4 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
         >
-          <ArrowRight className="w-5 h-5" /> Buat akun pengguna
+          <ArrowRight className="w-5 h-5" /> {submitting ? 'Mendaftarkan...' : 'Buat akun pengguna'}
         </button>
       </form>
 

@@ -8,9 +8,16 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.mimosa
+.zcode
 dist
 dist-ssr
 *.local
+
+# Environment & runtime data
+.env
+uploads/
+server/uploads/
 
 # Editor directories and files
 .vscode/*

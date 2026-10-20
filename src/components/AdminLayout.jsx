@@ -1,28 +1,11 @@
-// src/components/AdminLayout.jsx
-import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { BookOpen, ArrowUpRight } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function AdminLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
-
-  const [adminName] = useState(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const parsed = JSON.parse(storedUser);
-        if (parsed.name) return parsed.name;
-        if (parsed.email) {
-          const nameFromEmail = parsed.email.split('@')[0];
-          return nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1);
-        }
-      } catch {
-        return 'Admin';
-      }
-    }
-    return 'Admin';
-  });
+  const { user, logout } = useAuth();
 
   const menuItems = [
     { name: 'Dashboard', path: '/admin/dashboard' },
@@ -31,8 +14,8 @@ export default function AdminLayout({ children }) {
     { name: 'Activity Log', path: '/admin/activity-log' },
   ];
 
-  const handleSignOut = () => {
-    localStorage.clear();
+  const handleSignOut = async () => {
+    await logout();
     navigate('/login');
   };
 
@@ -51,8 +34,8 @@ export default function AdminLayout({ children }) {
         </div>
 
         <div className="flex items-center gap-6 text-xs font-sans">
-          <span className="font-bold text-[#133227] text-sm">{adminName}</span>
-          <button 
+          <span className="font-bold text-[#133227] text-sm">{user?.fullName || 'Admin'}</span>
+          <button
             onClick={handleSignOut}
             className="text-stone-500 hover:text-[#133227] flex items-center gap-0.5 transition cursor-pointer font-medium"
           >

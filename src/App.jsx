@@ -15,6 +15,7 @@ import AdminManageContentPage from './pages/AdminManageContentPage';
 import AdminCreateContentPage from './pages/AdminCreateContentPage';
 import AdminCategoryPage from './pages/AdminCategoryPage';
 import AdminActivityLogPage from './pages/AdminActivityLogPage';
+import ProtectedRoute from './components/ProtectedRoute';
 
 export default function App() {
   return (
@@ -27,19 +28,96 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
 
         {/* Route Pengguna */}
-        <Route path="/dashboard" element={<HomePage />} />
-        <Route path="/katalog" element={<CatalogPage />} />
-        <Route path="/buku/:id" element={<BookDetailPage />} />
-        <Route path="/baca/:id" element={<ReaderPage />} />
-        <Route path="/paper/:id" element={<PaperPage />} />
-        <Route path="/video/:id" element={<VideoPlayerPage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/katalog"
+          element={
+            <ProtectedRoute>
+              <CatalogPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/buku/:id"
+          element={
+            <ProtectedRoute>
+              <BookDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/baca/:id"
+          element={
+            <ProtectedRoute>
+              <ReaderPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/paper/:id"
+          element={
+            <ProtectedRoute>
+              <PaperPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/video/:id"
+          element={
+            <ProtectedRoute>
+              <VideoPlayerPage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Route Admin */}
-        <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-        <Route path="/admin/content" element={<AdminManageContentPage />} />
-        <Route path="/admin/content/create" element={<AdminCreateContentPage />} />
-        <Route path="/admin/category" element={<AdminCategoryPage />} />
-        <Route path="/admin/activity-log" element={<AdminActivityLogPage />} />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/content"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminManageContentPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/content/create"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminCreateContentPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/category"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminCategoryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/activity-log"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminActivityLogPage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" replace />} />

@@ -1,0 +1,11 @@
+node_modules
+dist
+server
+db
+monitoring
+.git
+.env
+*.md
+Dockerfile
+.dockerignore
+docker-compose.yml
