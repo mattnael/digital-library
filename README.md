@@ -4,6 +4,8 @@ Aplikasi perpustakaan digital berisi e-book, research paper, dan video YouTube,
 dengan panel admin (kelola konten, kategori, activity log), autentikasi JWT,
 audit trail, dan deployment Docker penuh.
 
+![Laras UI](ui/Project-Thumbnail.png)
+
 ## Arsitektur
 
 ```
